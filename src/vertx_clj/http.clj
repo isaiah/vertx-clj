@@ -34,8 +34,9 @@
   `(.requestHandler ~http-server
                     (handler ~expr ~@body)))
 
-(defn params [req key]
+(defn params
   "syntax sugar for get parameters"
+  [req key]
   (-> req .params (.get key)))
 
 (defn headers
@@ -43,8 +44,9 @@
   [^HttpServerRequest req]
   (.headers req))
 
-(defmacro get-now [client path & body]
+(defmacro get-now
   "Send a get request and block before the body returned"
+  [client path & body]
   `(.getNow ~client ~path
             (proxy [Handler] []
               (handle [resp#]
@@ -65,6 +67,7 @@
   [req callback]
   (.endHandler req callback))
 
-(defn send-file [req file]
+(defn send-file
   "syntax sugar for sendFile"
+  [req file]
   (.sendFile (.response req) file))

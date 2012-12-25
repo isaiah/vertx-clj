@@ -6,4 +6,5 @@
   :dependencies [[org.clojure/clojure "1.4.0"]
                  [org.vert-x/vertx-core "1.3.0.final"]
                  [org.vert-x/vertx-platform "1.3.0.final"]
-                 [org.clojure/tools.logging "0.2.3"]]) 
+                 [org.clojure/tools.logging "0.2.3"]]
+  :plugins [[lein-marginalia "0.7.1"]])

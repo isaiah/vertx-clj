@@ -1,4 +1,4 @@
-(ns vertx.core
+(ns vertx-clj.core
   (:import (org.vertx.java.core Vertx Handler AsyncResultHandler)
            (org.vertx.java.core.http HttpServerRequest RouteMatcher)
            (org.vertx.java.core.streams Pump)
