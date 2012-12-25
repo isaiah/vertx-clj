@@ -1,6 +1,7 @@
 (ns vertx.upload.server
-  (:require [vertx.core :as v])
-  (:use [clojure.tools.logging :only [info]]))
+  (:require [vertx-clj.core :as v])
+  (:use [clojure.tools.logging :only [info]]
+        [vertx-clj http file]))
 
 (def webroot "/home/isaiah/codes/java/vert.x/vertx-examples/src/main/clojure/src/vertx/upload/")
 
@@ -11,25 +12,25 @@
   (str webroot "file-" (uuid) ".upload"))
 
 (v/defverticle upload-server
-  (v/http-listen
+  (http-listen
    8080 "localhost"
-   (v/req-handler
+   (req-handler
     http-server [req]
        ;;; we first pause the request so we don't receive any data
        ;;; between now and when the file is opened
     (.pause req)
     (let [filename (gen-target-file)]
-      (v/open-file
+      (open-file
        vertx filename
-       (v/async-result-handler [async-result]
+       (async-result-handler [async-result]
                                (let [file (.result async-result)
                                      p (v/pump req (.getWriteStream file))
                                      start (System/currentTimeMillis)]
-                                 (v/end-handler req
+                                 (end-handler req
                                                 (v/handler [_]
-                                                           (v/close-file file
-                                                                         (v/async-result-handler [_]
-                                                                                                 (v/end-req req)
+                                                           (close-file file
+                                                                         (async-result-handler [_]
+                                                                                                 (end-req req)
                                                                                                  (let [end (System/currentTimeMillis)]
                                                                                                    (info "uploaded" (.getBytesPumped p)
                                                                                                          "byte to" filename "in" (- end start) "ms"))))))

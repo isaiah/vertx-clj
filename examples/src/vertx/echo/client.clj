@@ -1,5 +1,5 @@
 (ns vertx.echo.client
-  (:use vertx.core
+  (:use [vertx-clj core net]
         [clojure.tools.logging :only [info]])
   (:import (org.vertx.java.core.buffer Buffer)))
 

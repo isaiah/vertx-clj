@@ -1,5 +1,5 @@
 (ns vertx.echo.server
-  (:use (vertx core)))
+  (:use (vertx-clj core net)))
 
 (defverticle echo-server
   (sock-listen 1234 "localhost"

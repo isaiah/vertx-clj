@@ -1,8 +1,9 @@
 (ns vertx.http.client
-  (:require [vertx.core :as c])
+  (:require [vertx-clj.core :as c])
+  (:use [vertx-clj http])
   (:use [clojure.tools.logging :only [info]]))
 
 (c/defverticle http-client
-  (c/http-connect 8080 "localhost"
-                  (c/get-now client "/"
+  (http-connect 8080 "localhost"
+                  (get-now client "/"
                              (info buf))))

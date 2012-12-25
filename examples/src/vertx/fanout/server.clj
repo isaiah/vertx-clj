@@ -1,5 +1,5 @@
 (ns vertx.fanout.server
-  (:use vertx.core))
+  (:use [vertx-clj core net]))
 
 (defverticle fanout-server
   (sock-listen 1234 "localhost"
