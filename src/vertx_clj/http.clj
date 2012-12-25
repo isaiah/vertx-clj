@@ -1,4 +1,4 @@
-(ns vertx-clj.http.core
+(ns vertx-clj.http
   (:use vertx-clj.core)
   (:import [org.vertx.java.core.http RouteMatcher HttpServerRequest]
            [org.vertx.java.core Handler]))

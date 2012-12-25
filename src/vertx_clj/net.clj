@@ -1,4 +1,4 @@
-(ns vertx-clj.net.core
+(ns vertx-clj.net
   (:use vertx-clj.core))
 
 (defmacro sock-listen [port host & body]

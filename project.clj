@@ -1,4 +1,4 @@
-(defproject vertx-clj "0.1.0-SNAPSHOT"
+(defproject vertx-clj "0.1.1-SNAPSHOT"
   :description "syntax sugars for vertx clojure development"
   :url "https://github.com/isaiah/vertx-clj"
   :license {:name "Eclipse Public License"

@@ -1,4 +1,4 @@
-(ns vertx.route-matcher
+(ns vertx-clj.route-matcher
   (:refer-clojure :exclude [get])
   (:import (org.vertx.java.core Handler)))
 

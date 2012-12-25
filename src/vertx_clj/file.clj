@@ -1,4 +1,4 @@
-(ns vertx-clj.file.core
+(ns vertx-clj.file
   (:use vertx-clj.core)
   (:import [org.vertx.java.core AsyncResultHandler]))
 
