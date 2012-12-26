@@ -1,10 +1,10 @@
 # vertx-clj
 
-A clojure library for vertx development.
+A clojure wrapper for vertx development.
 
 ## Usage
 
-Add [vertx-clj "0.1.0"] to your project.clj
+Add [vertx-clj "0.1.1-SNAPSHOT"] to your project.clj
 
 ## License
 
