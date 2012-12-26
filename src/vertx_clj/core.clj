@@ -3,10 +3,15 @@
            (org.vertx.java.core.http HttpServerRequest RouteMatcher)
            (org.vertx.java.core.streams Pump)
            (clojure.lang ArityException))
-  (:require [clojure.string :as s]))
+  (:require [clojure.string :as s])
+  (:use vertx-clj.utils))
 
 (defn- verticlize [x]
   (s/join (map s/capitalize (s/split x #"-"))))
+
+(defn deploy-module [module-name conf instances done-handler]
+  (fn [vertx# container#]
+    (.deployModule container# module-name (json conf) instances done-handler)))
 
 (defmacro run-verticles [& verts]
   `(fn [_# container#]
