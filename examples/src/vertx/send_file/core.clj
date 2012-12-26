@@ -10,5 +10,5 @@
                (req-handler http-server [req]
                             (let [path (.path req)]
                               (if (= path "/")
-                                (send-file req (str webroot "index.html"))
-                                (send-file req (str webroot path)))))))
+                                (send-file req webroot "index.html")
+                                (send-file req webroot path))))))

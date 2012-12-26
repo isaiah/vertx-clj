@@ -69,5 +69,5 @@
 
 (defn send-file
   "syntax sugar for sendFile"
-  [req file]
-  (.sendFile (.response req) file))
+  [req & paths]
+  (.sendFile (.response req) (apply str paths)))
