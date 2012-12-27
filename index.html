@@ -3037,23 +3037,44 @@ net.brehaut.ClojureTools = (function (SH) {
            (org.vertx.java.core.streams Pump)
            (clojure.lang ArityException))
   (:require [clojure.string :as s])
-  (:use vertx-clj.utils))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn- verticlize [x]
-  (s/join (map s/capitalize (s/split x #&quot;-&quot;))))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn deploy-module [module-name conf instances done-handler]
-  (fn [vertx# container#]
-    (.deployModule container# module-name (json conf) instances done-handler)))</pre></td></tr><tr><td class="docs">
+  (:use vertx-clj.utils))</pre></td></tr><tr><td class="docs"><p>Converts a string to UpperCamelCase.</p>
+</td><td class="codes"><pre class="brush: clojure">(defn- camelize
+  [x]
+  (s/join (map s/capitalize (s/split x #&quot;-&quot;))))</pre></td></tr><tr><td class="docs"><p>Deploy a module programmatically. Please see the modules manual for more information
+   about modules.</p>
+</td><td class="codes"><pre class="brush: clojure">(defn deploy-module
+  ([module-name conf]
+     (fn [vertx# container#]
+       (.deployModule container# module-name (json conf))))
+  ([module-name conf instances]
+     (.deployModule container# module-name (json conf) instances))
+  ([module-name conf instances done-handler]
+     (fn [vertx# container#]
+       (.deployModule container# module-name (json conf) instances done-handler)))  )</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defmacro run-verticles [&amp; verts]
   `(fn [_# container#]
      (doseq [v# (list ~@verts)]
        (doseq [name# (vals (ns-interns v#))]
          (when-let [verticle# (:verticle (meta name#))]
-           (.deployVerticle container# verticle#))))))</pre></td></tr><tr><td class="docs"><p>Define a vertx verticle instance.</p>
+           (.deployVerticle container# verticle#))))))</pre></td></tr><tr><td class="docs"><p>Define a vertx verticle:</p>
+
+<pre><code> (defverticle http-server
+   (http-listen 8080 "localhost"
+                (req-handler http-server [req]
+                             (end-req req "hello vertx"))))
+</code></pre>
+
+<p>   As in a java verticle, vertx and container is available for the body.</p>
+
+<p>   The name is used to generate the Verticle, e.g. the previous verticle
+   will generate a HttpServer.class file in your project :compile-path, which can be
+   run as <code>vertx run HttpServer</code>. This is transparent to the user if the lein-vertx
+   plugin is used to run the verticles.</p>
 </td><td class="codes"><pre class="brush: clojure">(defmacro defverticle
   [vert body]
   (let [this (gensym &quot;this&quot;)
         prefix (gensym &quot;prefix-&quot;)
-        vert-class (-&gt; vert str verticlize)]
+        vert-class (-&gt; vert str camelize)]
     `(do
        (defn ~(vary-meta (symbol (str prefix &quot;start&quot;)) assoc :verticle vert-class) [~this]
          (let [vertx# (.getVertx ~this)
@@ -3062,21 +3083,31 @@ net.brehaut.ClojureTools = (function (SH) {
        (gen-class
         :name ~vert-class
         :extends org.vertx.java.deploy.Verticle
-        :prefix ~(str prefix)))))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defmacro handler [expr &amp; body]
+        :prefix ~(str prefix)))))</pre></td></tr><tr><td class="docs"><p>Syntax sugar to create a <code>org.vertx.java.core.Handler</code> instance:</p>
+
+<pre><code> (handler [data]
+   (println data))
+</code></pre>
+</td><td class="codes"><pre class="brush: clojure">(defmacro handler
+  [expr &amp; body]
   `(proxy [Handler] []
-    (handle ~expr
-      ~@body)))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defmacro deploy-verticles [&amp; args]
+     (handle ~expr
+       ~@body)))</pre></td></tr><tr><td class="docs"><p>Take a list of verticles and deploy them programmatically.</p>
+</td><td class="codes"><pre class="brush: clojure">(defmacro deploy-verticles
+  [&amp; args]
   `(defverticle ~(gensym &quot;container&quot;)
-     (run-verticles ~@args)))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defmacro data-handler [sock expr &amp; body]
+     (run-verticles ~@args)))</pre></td></tr><tr><td class="docs"><p>Create a handler and attach it the <code>.dataHandler</code> callback of the first argument,
+   usually a socket</p>
+</td><td class="codes"><pre class="brush: clojure">(defmacro data-handler
+  [sock expr &amp; body]
   `(.dataHandler ~sock
-                 (handler ~expr ~@body)))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defmacro frame-handler [sock expr &amp; body]
+                 (handler ~expr ~@body)))</pre></td></tr><tr><td class="docs"><p>The same as <code>data-handler</code>, except the passed in data is devided by a delimited record parser.</p>
+</td><td class="codes"><pre class="brush: clojure">(defmacro frame-handler
+  [sock expr &amp; body]
   `(.dataHandler ~sock
                  (RecordParser/newDelimited &quot;\n&quot;
-                                            (handler ~expr ~@body))))</pre></td></tr><tr><td class="docs">
+                                            (handler ~expr ~@body))))</pre></td></tr><tr><td class="docs"><p>Create a Pump on the passed two sockets, takes an optional parameter for whether start the pump
+   immediately, Default false.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn pump
   ([sock1 sock2]
      (Pump/createPump sock1 sock2))
@@ -3087,29 +3118,36 @@ net.brehaut.ClojureTools = (function (SH) {
 </td><td class="codes"><pre class="brush: clojure">(ns vertx-clj.file
   (:use vertx-clj.core)
   (:import [org.vertx.java.core AsyncResultHandler]))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn open-file [vertx filename handler]
+</td><td class="codes"><pre class="brush: clojure">(defn open-file
+  [vertx filename handler]
   (-&gt; vertx .fileSystem
       (.open filename handler)))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn close-file [f callback]
   (.close f callback))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defmacro async-result-handler [expr &amp; body]
+  &quot;Create a ```AsyncResultHandler```&quot;
   `(proxy [AsyncResultHandler] []
     (handle ~expr
       ~@body)))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#vertx-clj.http" name="vertx-clj.http"><h1 class="project-name">vertx-clj.http</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(ns vertx-clj.http
   (:use vertx-clj.core)
   (:import [org.vertx.java.core.http RouteMatcher HttpServerRequest]
-           [org.vertx.java.core Handler]))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defmacro http-connect [port host &amp; body]
+           [org.vertx.java.core Handler]))</pre></td></tr><tr><td class="docs"><p>Create a HttpClient instance.</p>
+</td><td class="codes"><pre class="brush: clojure">(defmacro http-connect
+  [port host &amp; body]
   `(fn [vertx# _#]
      (let [http-client# (.createHttpClient vertx#)]
        (doto http-client# (.setPort ~port) (.setHost ~host))
-       ((fn [~'vertx ~'client] ~@body) vertx# http-client#))))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defmacro http-listen [port host &amp; body]
+       ((fn [~'vertx ~'client] ~@body) vertx# http-client#))))</pre></td></tr><tr><td class="docs"><p>Create a HttpServer instance that listens on the specified port and host.
+   instance of Vertx and HttpServer is available in the body as vertx
+   and http-server.</p>
+</td><td class="codes"><pre class="brush: clojure">(defmacro http-listen
+  [port host &amp; body]
   `(fn [vertx# _#]
      (let [http-server# (.createHttpServer vertx#)]
        ((fn [~'vertx ~'http-server] ~@body) vertx# http-server#)
-       (.listen http-server# ~port ~host))))</pre></td></tr><tr><td class="docs"><p>Sinatra like route matching</p>
+       (.listen http-server# ~port ~host))))</pre></td></tr><tr><td class="docs"><p>Sinatra like route matching by <code>RouterMatcher</code>, a <code>RouterMatcher</code>
+  instance is available for the body.</p>
 </td><td class="codes"><pre class="brush: clojure">(defmacro http-route
   [port host &amp; body]
   `(fn [vertx# container#]
@@ -3118,19 +3156,21 @@ net.brehaut.ClojureTools = (function (SH) {
        ((fn [~'router] ~@body) router#)
        (-&gt; http#
            (.requestHandler router#)
-           (.listen ~port ~host)))))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defmacro ws-handler [http-server expr &amp; body]
+           (.listen ~port ~host)))))</pre></td></tr><tr><td class="docs"><p>Create a handler for websocket request.</p>
+</td><td class="codes"><pre class="brush: clojure">(defmacro ws-handler
+  [http-server expr &amp; body]
   `(.websocketHandler ~http-server
-                      (handler ~expr ~@body)))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defmacro req-handler [http-server expr &amp; body]
+                      (handler ~expr ~@body)))</pre></td></tr><tr><td class="docs"><p>Create a handler for http request.</p>
+</td><td class="codes"><pre class="brush: clojure">(defmacro req-handler
+  [http-server expr &amp; body]
   `(.requestHandler ~http-server
-                    (handler ~expr ~@body)))</pre></td></tr><tr><td class="docs"><p>syntax sugar for get parameters</p>
+                    (handler ~expr ~@body)))</pre></td></tr><tr><td class="docs"><p>Retrieve the value associated with the key from request parameters.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn params
-  [req key]
-  (-&gt; req .params (.get key)))</pre></td></tr><tr><td class="docs"><p>Get the headers of the request</p>
+  [^HttpServerRequest req key]
+  (-&gt; req .params (.get key)))</pre></td></tr><tr><td class="docs"><p>Get the headers of the request.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn headers
   [^HttpServerRequest req]
-  (.headers req))</pre></td></tr><tr><td class="docs"><p>Send a get request and block before the body returned</p>
+  (.headers req))</pre></td></tr><tr><td class="docs"><p>Send a get request and block before the body returned.</p>
 </td><td class="codes"><pre class="brush: clojure">(defmacro get-now
   [client path &amp; body]
   `(.getNow ~client ~path
@@ -3139,68 +3179,80 @@ net.brehaut.ClojureTools = (function (SH) {
                 (.bodyHandler resp#
                               (proxy [Handler] []
                                 (handle [data#]
-                                  ((fn [~'buf] ~@body) data#))))))))</pre></td></tr><tr><td class="docs"><p>syntax sugar for end request</p>
+                                  ((fn [~'buf] ~@body) data#))))))))</pre></td></tr><tr><td class="docs"><p>Syntax sugar for ending request.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn end-req
   ([req buf]
      (.end (.response req) buf))
   ([req]
-     (.end (.response req))))</pre></td></tr><tr><td class="docs"><p>call the callback when the request ends</p>
+     (.end (.response req))))</pre></td></tr><tr><td class="docs"><p>Handler for request end event.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn end-handler
   [req callback]
-  (.endHandler req callback))</pre></td></tr><tr><td class="docs"><p>syntax sugar for sendFile</p>
+  (.endHandler req callback))</pre></td></tr><tr><td class="docs"><p>Http SendFile.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn send-file
   [req &amp; paths]
   (.sendFile (.response req) (apply str paths)))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#vertx-clj.net" name="vertx-clj.net"><h1 class="project-name">vertx-clj.net</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(ns vertx-clj.net
-  (:use vertx-clj.core))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defmacro sock-listen [port host &amp; body]
+  (:use vertx-clj.core))</pre></td></tr><tr><td class="docs"><p>Create a <code>NetServer</code> and listen on specified port and host,
+   vertx and sock-server is available in the body.</p>
+</td><td class="codes"><pre class="brush: clojure">(defmacro sock-listen
+  [port host &amp; body]
   `(fn [vertx# _#]
      (let [sock-server# (.createNetServer vertx#)]
        ((fn [~'vertx ~'sock-server] ~@body) vertx# sock-server#)
-       (.listen sock-server# ~port ~host))))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defmacro sock-connect [port host body]
+       (.listen sock-server# ~port ~host))))</pre></td></tr><tr><td class="docs"><p>Create a <code>NetClient</code>, and connect specified port and host.</p>
+</td><td class="codes"><pre class="brush: clojure">(defmacro sock-connect
+  [port host body]
   `(fn [vertx# container#]
      (let [client# (.createNetClient vertx#)]
-       (.connect client# ~port ~host ~body))))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defmacro connect-handler [sock-server expr &amp; body]
+       (.connect client# ~port ~host ~body))))</pre></td></tr><tr><td class="docs"><p>Used by a <code>NetServer</code>, handle new connection.</p>
+</td><td class="codes"><pre class="brush: clojure">(defmacro connect-handler
+  [sock-server expr &amp; body]
   `(.connectHandler ~sock-server
-                    (handler ~expr ~@body)))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defmacro closed-handler [sock expr &amp; body]
+                    (handler ~expr ~@body)))</pre></td></tr><tr><td class="docs"><p>Used by a <code>NetServer</code>, handle connection close.</p>
+</td><td class="codes"><pre class="brush: clojure">(defmacro closed-handler
+  [sock expr &amp; body]
   `(.closedHandler ~sock
                   (handler ~expr ~@body)))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#vertx-clj.route-matcher" name="vertx-clj.route-matcher"><h1 class="project-name">vertx-clj.route-matcher</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(ns vertx-clj.route-matcher
   (:refer-clojure :exclude [get])
-  (:import (org.vertx.java.core Handler)))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn get [router path req-fn]
+  (:import [org.vertx.java.core Handler]
+           [org.vertx.java.core.http RouteMatcher]))</pre></td></tr><tr><td class="docs"><p>Helper methods for <code>RouteMatcher</code>, check vertx docuement for
+more info on route pattern matching.</p>
+</td><td class="codes"></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn get
+  [^RouteMatcher router path req-fn]
   (.get router path
     (proxy [Handler] []
       (handle [req]
         (req-fn req)))))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn get-with-regexp [router path req-fn]
+</td><td class="codes"><pre class="brush: clojure">(defn get-with-regexp
+  [^RouteMatcher router path req-fn]
   (.getWithRegEx router path
     (proxy [Handler] []
       (handle [req]
         (req-fn req)))))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#vertx-clj.sockjs" name="vertx-clj.sockjs"><h1 class="project-name">vertx-clj.sockjs</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(ns vertx-clj.sockjs
-  (:import [org.vertx.java.core.json JsonObject JsonArray]))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(declare bound-obj prefix)</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn install-app [sockjs-server pfx handler]
-  (.installApp sockjs-server (prefix pfx) handler))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn bridge [sockjs-server pfx inbound outbound]
+  (:import [org.vertx.java.core.json JsonObject JsonArray])
+  (:use vertx-clj.utils))</pre></td></tr><tr><td class="docs"><p>Helper methods for <code>SockJSServer</code>.</p>
+</td><td class="codes"></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(declare bound-obj prefix)</pre></td></tr><tr><td class="docs"><p>Setting up handlers for requests from sockjs client.</p>
+</td><td class="codes"><pre class="brush: clojure">(defn install-app
+  [sockjs-server pfx handler]
+  (.installApp sockjs-server (prefix pfx) handler))</pre></td></tr><tr><td class="docs"><p>Setting up SockJS EventBus bridge.</p>
+</td><td class="codes"><pre class="brush: clojure">(defn bridge
+  [sockjs-server pfx inbound outbound]
   (let [in-permitted (bound-obj inbound)
         out-permitted (bound-obj outbound)
         eb-prefix (prefix pfx)]
     (.bridge sockjs-server eb-prefix in-permitted out-permitted)))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn- ^JsonArray bound-obj [clj-map]
-  (let [permitted (JsonObject.)]
-    (doseq [[k v] clj-map]
-      (.putString permitted (name k) (str v)))
-    (-&gt; (JsonArray.) (.add permitted))))</pre></td></tr><tr><td class="docs">
+  (-&gt; (JsonArray.) (.add (json clj-map))))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn- ^JsonObject prefix [s]
   (-&gt; (JsonObject.) (.putString &quot;prefix&quot; s)))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#vertx-clj.utils" name="vertx-clj.utils"><h1 class="project-name">vertx-clj.utils</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(ns vertx-clj.utils
-  (:import [org.vertx.java.core.json JsonObject]))</pre></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn ^JsonObject json [clj-map]
+  (:import [org.vertx.java.core.json JsonObject]))</pre></td></tr><tr><td class="docs"><p>Convert a map to <code>JsonObject</code>.</p>
+</td><td class="codes"><pre class="brush: clojure">(defn ^JsonObject json
+  [clj-map]
   (let [ret (JsonObject.)]
     (doseq [[k v] clj-map]
       (.putString ret (name k) (str v)))
