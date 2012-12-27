@@ -3,20 +3,27 @@
   (:import [org.vertx.java.core.http RouteMatcher HttpServerRequest]
            [org.vertx.java.core Handler]))
 
-(defmacro http-connect [port host & body]
+(defmacro http-connect
+  "Create a HttpClient instance."
+  [port host & body]
   `(fn [vertx# _#]
      (let [http-client# (.createHttpClient vertx#)]
        (doto http-client# (.setPort ~port) (.setHost ~host))
        ((fn [~'vertx ~'client] ~@body) vertx# http-client#))))
 
-(defmacro http-listen [port host & body]
+(defmacro http-listen
+  "Create a HttpServer instance that listens on the specified port and host.
+   instance of Vertx and HttpServer is available in the body as vertx
+   and http-server."
+  [port host & body]
   `(fn [vertx# _#]
      (let [http-server# (.createHttpServer vertx#)]
        ((fn [~'vertx ~'http-server] ~@body) vertx# http-server#)
        (.listen http-server# ~port ~host))))
 
 (defmacro http-route
-  "Sinatra like route matching"
+  "Sinatra like route matching by ```RouterMatcher```, a ```RouterMatcher```
+  instance is available for the body."
   [port host & body]
   `(fn [vertx# container#]
      (let [http# (.createHttpServer vertx#)
@@ -26,26 +33,30 @@
            (.requestHandler router#)
            (.listen ~port ~host)))))
 
-(defmacro ws-handler [http-server expr & body]
+(defmacro ws-handler
+  "Create a handler for websocket request."
+  [http-server expr & body]
   `(.websocketHandler ~http-server
                       (handler ~expr ~@body)))
 
-(defmacro req-handler [http-server expr & body]
+(defmacro req-handler
+  "Create a handler for http request."
+  [http-server expr & body]
   `(.requestHandler ~http-server
                     (handler ~expr ~@body)))
 
 (defn params
-  "syntax sugar for get parameters"
-  [req key]
+  "Retrieve the value associated with the key from request parameters."
+  [^HttpServerRequest req key]
   (-> req .params (.get key)))
 
 (defn headers
-  "Get the headers of the request"
+  "Get the headers of the request."
   [^HttpServerRequest req]
   (.headers req))
 
 (defmacro get-now
-  "Send a get request and block before the body returned"
+  "Send a get request and block before the body returned."
   [client path & body]
   `(.getNow ~client ~path
             (proxy [Handler] []
@@ -56,18 +67,18 @@
                                   ((fn [~'buf] ~@body) data#))))))))
 
 (defn end-req
-  "syntax sugar for end request"
+  "Syntax sugar for ending request."
   ([req buf]
      (.end (.response req) buf))
   ([req]
      (.end (.response req))))
 
 (defn end-handler
-  "call the callback when the request ends"
+  "Handler for request end event."
   [req callback]
   (.endHandler req callback))
 
 (defn send-file
-  "syntax sugar for sendFile"
+  "Http SendFile."
   [req & paths]
   (.sendFile (.response req) (apply str paths)))

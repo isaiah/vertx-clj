@@ -2,7 +2,8 @@
   (:use vertx-clj.core)
   (:import [org.vertx.java.core AsyncResultHandler]))
 
-(defn open-file [vertx filename handler]
+(defn open-file
+  [vertx filename handler]
   (-> vertx .fileSystem
       (.open filename handler)))
 
@@ -10,6 +11,7 @@
   (.close f callback))
 
 (defmacro async-result-handler [expr & body]
+  "Create a ```AsyncResultHandler```"
   `(proxy [AsyncResultHandler] []
     (handle ~expr
       ~@body)))
