@@ -1,15 +1,13 @@
 (ns vertx.upload.server
   (:require [vertx-clj.core :as v])
   (:use [clojure.tools.logging :only [info]]
-        [vertx-clj http file]))
-
-(def webroot "/home/isaiah/codes/java/vert.x/vertx-examples/src/main/clojure/src/vertx/upload/")
+        [vertx-clj http file utils]))
 
 (defn uuid []
   (str (java.util.UUID/randomUUID)))
 
 (defn gen-target-file []
-  (str webroot "file-" (uuid) ".upload"))
+  (webroot (str "file-" (uuid) ".upload")))
 
 (v/defverticle upload-server
   (http-listen

@@ -1,10 +1,8 @@
 (ns vertx.upload.client
   (:require [vertx-clj.core :as v])
-  (:use [vertx-clj http file]
+  (:use [vertx-clj http file utils]
         [clojure.tools.logging :only [info]]
         [clojure.java.io :only [file]]))
-
-(def webroot "/home/isaiah/codes/java/vert.x/vertx-examples/src/main/clojure/src/vertx/upload/")
 
 (v/defverticle upload-client
   (http-connect
@@ -12,7 +10,7 @@
    (let [req (.put client "/"
                    (v/handler [response]
                               (info "File uploaded: " (.statusCode response))))
-         filename (str webroot "upload.txt")]
+         filename (webroot "upload.txt")]
      (-> req .headers (.put "Content-Length" (.length (file filename))))
      (open-file
       vertx filename

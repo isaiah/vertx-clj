@@ -1,5 +1,6 @@
 (ns vertx-clj.utils
-  (:import [org.vertx.java.core.json JsonObject]))
+  (:import [org.vertx.java.core.json JsonObject])
+  (:require [clojure.string :as s]))
 
 (defn ^JsonObject json
   "Convert a map to ```JsonObject```."
@@ -8,3 +9,10 @@
     (doseq [[k v] clj-map]
       (.putString ret (name k) (str v)))
     ret))
+
+(def user-dir (s/replace (System/getProperty "user.dir") #"target/classes" ""))
+
+(defmacro webroot
+  "Get the absolute path of the current verticle definition."
+  [resource]
+  `(str user-dir "src/" (-> (s/join "/" (-> ~*ns* str (s/split #"\.") drop-last)) (s/replace #"-" "_")) "/" ~resource))
