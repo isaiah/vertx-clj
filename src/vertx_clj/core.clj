@@ -18,7 +18,8 @@
      (fn [vertx# container#]
        (.deployModule container# module-name (json conf))))
   ([module-name conf instances]
-     (.deployModule container# module-name (json conf) instances))
+     (fn [vertx# container#]
+       (.deployModule container# module-name (json conf) instances)))
   ([module-name conf instances done-handler]
      (fn [vertx# container#]
        (.deployModule container# module-name (json conf) instances done-handler)))  )
