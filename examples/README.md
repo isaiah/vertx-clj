@@ -2,7 +2,7 @@ Get started
 -----------
 
 Copy clojure.jar to $VERTX_HOME/lib, and make sure ```vertx``` is
-in your PATH.
+in the PATH.
 
 How to run examples
 -------------------
