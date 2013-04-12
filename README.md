@@ -60,7 +60,7 @@ more examples.
 
 ## How does it work?
 
-Behind the scene it usees :gen-class to generate wrapper classes for
+Behind the scene it uses :gen-class to generate wrapper classes for
 verticles, and executes them with vertx by the
 [lein-vertx](https://github.com/isaiah/lein-vertx) plugin
 
