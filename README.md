@@ -1,4 +1,4 @@
-vertx-clj is out-dated, please checkout the official [mod=lang-clojure[(https://github.com/vert-x/mod-lang-clojure) project.
+vertx-clj is out-dated, please checkout the official [mod-lang-clojure](https://github.com/vert-x/mod-lang-clojure) project.
 
 # vertx-clj
 
